@@ -23,6 +23,4 @@ def oracle_connection():
     return cx_Oracle.connect(user=username, password=password, dsn=dsn)
 
 
-azure_connection()
-
 

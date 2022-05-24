@@ -23,7 +23,7 @@ def standard_cost():
                          oracle_cnxn)  # this has one million rows of data, but does not need refresh often (1 - 3 times a month)
     try:
         for index, row in report.iterrows():
-            azure_cursor.execute(queries.shipped_lines_insert_query,
+            azure_cursor.execute(queries.standard_cost_insert_query,
                                  (row['SKU_ID']
                                   , row['STANDARD_COST']
                                   , curr_date
