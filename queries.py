@@ -7,6 +7,7 @@ standard_cost_query = """
             AND STANDARD_COST IS NOT NULL	
     """
 
+
 standard_cost_insert_query = """
     INSERT INTO Standard_Cost(
         SKU_ID
@@ -16,6 +17,7 @@ standard_cost_insert_query = """
         )
     VALUES(?, ?, ?, ?)
     """
+
 
 crown_hlg_kits_dp_query = """
     SELECT TRUNC(SYSDATE-0.19) AS REPORT_DATE,CASE WHEN ORDER_TYPE='KTS' THEN 'CROWN' ELSE CASE WHEN CONSIGNMENT LIKE '%HLG%' THEN 'HLG' ELSE '' END END AS "KIT_BUILDER",
