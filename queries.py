@@ -59,20 +59,13 @@ crown_hlg_kits_dp_query = """
 
 
 shipped_lines_query = """
-    SELECT 
-        TRUNC(SYSDATE-0.19) AS REPORT_DATE, 
-        CASE WHEN ORDER_TYPE='KTS' THEN 'CRW' ELSE 'HLG' END AS "3PL", 
-        SKU_ID, 
-        UPDATE_QTY AS SHIPPED_QTY, 
-        ORDER_TYPE, 
-        ORDER_ID, 
-        LINE_ID,
-        SHIP_BY_DATE
-    FROM DCSDBA.INVENTORY_TRANSACTION ITL LEFT JOIN DCSDBA.ORDER_HEADER OH ON ITL.REFERENCE_ID=OH.ORDER_ID AND ITL.SITE_ID=OH.FROM_SITE_ID
-    WHERE ITL.SITE_ID='MEM'
-        AND TRUNC(DSTAMP)=TRUNC(SYSDATE-1.19)
-        AND CODE='Shipment'
-        AND (ITL.CONSIGNMENT LIKE '%HLG%' OR ORDER_TYPE='KTS')
+    SELECT TRUNC(SYSDATE-0.19) AS REPORT_DATE, CASE WHEN ORDER_TYPE='KTS' THEN 'CRW' ELSE 'HLG' END AS "3PL", SKU_ID, UPDATE_QTY AS SHIPPED_QTY, ORDER_TYPE, ORDER_ID, LINE_ID,
+SHIP_BY_DATE, DSTAMP AS SHIPPED_DATE
+FROM DCSDBA.INVENTORY_TRANSACTION ITL LEFT JOIN DCSDBA.ORDER_HEADER OH ON ITL.REFERENCE_ID=OH.ORDER_ID AND ITL.SITE_ID=OH.FROM_SITE_ID
+WHERE ITL.SITE_ID='MEM'
+ AND TRUNC(DSTAMP)=TRUNC(SYSDATE-1.19)
+ AND CODE='Shipment'
+AND (ITL.CONSIGNMENT LIKE '%HLG%' OR ORDER_TYPE='KTS')
     """
 
 
@@ -126,8 +119,9 @@ shipped_lines_insert_query = """
                                             ,ORDER_ID
                                             ,LINE_ID
                                             ,SHIP_BY_DATE
+                                            , SHIPPED_DATE
                                             ,RECORD_KEY)
-                    VALUES(?,?,?,?,?,?,?,?,?)
+                    VALUES(?,?,?,?,?,?,?,?,?, ?)
                     """
 
 

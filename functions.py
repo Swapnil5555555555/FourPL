@@ -78,6 +78,7 @@ def shipped_lines_query_dp():
                                   , row['ORDER_ID']
                                   , row['LINE_ID']
                                   , row['SHIP_BY_DATE']
+                                  , row['SHIPPED_DATE']
                                   , uuid4()))
             azure_cnxn.commit()
         except Exception as e:
