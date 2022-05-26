@@ -108,3 +108,84 @@ def open_kits():
             # TODO: Log missed row on distinct report and distribute
             # TODO: Also, indicate that the report will be a part of the email
             pass
+
+
+def des_opc():
+    curr_date = datetime.now().strftime('%Y-%m-%d')
+    report = pd.read_sql(queries.des_ops_query, oracle_cnxn)
+    for index, row in report.iterrows():
+        try:
+            azure_cursor.execute(queries.des_ops_insert_query, (
+                row['SKU_ID']
+                ,row['OPC']
+                ,row['DESCRIPTION']
+                ,curr_date
+                ,uuid4()
+            ))
+
+            azure_cnxn.commit()
+        except Exception as e:
+            print(e)
+            #TODO: Log any failed uploads and trigger warning emails
+
+
+def crown_prepack_rates():
+    curr_date = datetime.now().strftime('%Y-%m-%d')
+    report = pd.read_sql(queries.crown_prepack_rates_query, oracle_cnxn)
+    for index, row in report.iterrows():
+        try:
+            azure_cursor.execute(queries.crown_prepack_rates_insert_query,
+                                 (row['SKU_ID']
+                                 ,row['PREPACK_CODE']
+                                  ,row['SALES_MULTIPLE']
+                                  ,row['PREPACK_RATE']
+                                  ,curr_date
+                                  ,uuid4()))
+            azure_cnxn.commit()
+        except Exception as e:
+            print(e)
+            #TODO: Log any failed uploads and enable email report
+
+
+def inbound_putaway():
+    report_crown = pd.read_sql(queries.inbound_putaway_query, oracle_cnxn)
+    for index, row in report_crown.iterrows():
+        try:
+            azure_cursor.execute(queries.inbound_putaway_insert_query, (
+                row['REPORT_DATE']
+                ,row['TAG_ID']
+                ,row['SKU_ID']
+                ,row['PUTAWAY_DATE']
+                ,row['PUTAWAY_QTY']
+                ,row['BYH_RECEIPT_FROM_CROWN_DATE_']
+                ,row['BYH_RECEIPT_QTY_FROM_CROWN']
+                ,row['CROWN_TRAILER_LOAD_DATE']
+                ,row['CROWN_TRAILER_LOAD_QTY']
+                ,uuid4()
+            ))
+        except Exception as e:
+            print(e)
+            #TODO: Log Failures on report and trigger email report
+
+    report_hlg_lip = pd.read_sql(queries.hlg_lip_putaways, oracle_cnxn)
+    for index, row in report_hlg_lip.iterrows():
+        try:
+            azure_cursor.execute(queries.hlg_lip_putaways, (
+                row['REPORT_DATE']
+                ,row['3PL']
+                ,row['ASN_ID']
+                ,row['TAG_ID']
+                ,row['SKU_ID']
+                ,row['SUPPLIER_ID']
+                ,row['QTY_RECEIVED']
+                ,row['QTY_PUTAWAY']
+                ,row['RECEIPT_DATE']
+                ,row['PUTAWAY_DATE']
+                ,row['ASN_CREATION_DATE']
+                ,row['ASN_COMPLETION_DATE']
+                ,uuid4()
+            ))
+        except Exception as e:
+            print(e)
+            #TODO: Log Failures on report and trigger email report
+
