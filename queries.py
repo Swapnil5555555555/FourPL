@@ -172,6 +172,7 @@ crown_prepack_rates_query = """
     WHERE MAT.SITE_ID='MEM' AND PREPACK_RATE IS NOT NULL
     """
 
+
 crown_prepack_rates_insert_query = """
     INSERT INTO Crown_Prepack_Rates(
         SKU_ID
@@ -183,6 +184,7 @@ crown_prepack_rates_insert_query = """
         )
     VALUES(?, ?, ?, ?, ?, ?)
     """
+
 
 inbound_putaway_query = """
     SELECT 
@@ -256,6 +258,7 @@ inbound_putaway_insert_query = """
         VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
 
+
 hlg_lip_putaways = """
     SELECT 
         TRUNC(SYSDATE-0.19) AS REPORT_DATE
@@ -286,6 +289,7 @@ hlg_lip_putaways = """
 
     """
 
+
 hlg_lip_putaways_insert = """
     INSERT INTO HLG_LIP_Putaways(
         REPORT_DATE
@@ -304,4 +308,118 @@ hlg_lip_putaways_insert = """
         )
         VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
+
+
+inbound_receipts = """
+    SELECT 
+        TRUNC(SYSDATE-0.19) AS REPORT_DATE
+        ,CASE WHEN ITL.SUPPLIER_ID='54197' THEN 'HLG' ELSE 'Lippert' END AS "3PL"
+        ,TRUNC(DSTAMP) AS DATE_
+        ,TAG_ID
+        ,ITL.SKU_ID
+        ,SUPPLIER_ID
+        ,UPDATE_QTY AS QTY
+    FROM DCSDBA.INVENTORY_TRANSACTION ITL 
+    WHERE ITL.SITE_ID='MEM'
+    AND SUPPLIER_ID IN ('0008123','0753080039','0008121','8419','80039','32042','54197')
+    AND CODE='Receipt'
+    AND TRUNC (DSTAMP)=TRUNC(SYSDATE-1.19)
+    
+    union all 
+    
+    SELECT TRUNC(SYSDATE-0.19) AS REPORT_DATE, 'CRW' AS "3PL",TRUNC(DSTAMP) AS DATE_, TAG_ID, ITL.SKU_ID, SUPPLIER_ID,  UPDATE_QTY AS QTY
+    FROM DCSDBA.INVENTORY_TRANSACTION ITL LEFT JOIN DCSDBA.V_SKU_PROPERTIES VSK ON ITL.SKU_ID=VSK.SKU_ID AND ITL.SITE_ID=VSK.SITE_ID
+    WHERE ITL.SITE_ID='MEM'
+    AND FROM_LOC_ID LIKE 'CR%OT%'
+    AND TO_LOC_ID NOT LIKE 'CR%'
+    AND TRUNC (DSTAMP)=TRUNC(SYSDATE-1.19)
+
+    """
+
+
+inbound_receipts_insert = """
+    INSERT INTO Receipts(
+        REPORT_DATE
+        ,TYPE
+        ,RECEIPT_DATE
+        ,TAG_ID
+        ,SKU_ID
+        ,SUPPLIER_ID
+        ,QTY
+        ,RECORD_KEY
+        )
+        VALUES(?, ?, ?, ?, ?, ?, ?, ?)
+    """
+
+
+open_asns = """
+    SELECT TRUNC(SYSDATE-0.19) AS REPORT_DATE, CASE WHEN SUPPLIER_ID='54197' THEN 'HLG' ELSE 'Lippert' END AS "3PL",
+    PAH.PRE_ADVICE_ID AS ASN_ID, PAL.SKU_ID, SUPPLIER_ID,QTY_DUE,
+    PAH.CREATION_DATE AS ASN_CREATION_DATE,
+     PAH.STATUS AS ASN_STATUS
+    
+    FROM  DCSDBA.PRE_ADVICE_HEADER PAH LEFT JOIN DCSDBA.PRE_ADVICE_LINE PAL ON PAH.PRE_ADVICE_ID=PAL.PRE_ADVICE_ID AND PAH.CLIENT_ID=PAL.CLIENT_ID 
+         LEFT JOIN (SELECT ASN_ID, SKU_ID,DSTAMP, UPDATE_QTY FROM DCSDBA.INVENTORY_TRANSACTION WHERE SITE_ID='MEM' AND CODE='Receipt')REC ON PAL.PRE_ADVICE_ID=REC.ASN_ID AND PAL.SKU_ID=REC.SKU_ID
+         LEFT JOIN (SELECT ASN_ID, SKU_ID,DSTAMP, UPDATE_QTY FROM DCSDBA.INVENTORY_TRANSACTION_ARCHIVE WHERE SITE_ID='MEM' AND CODE='Receipt')RECA ON PAL.PRE_ADVICE_ID=RECA.ASN_ID AND PAL.SKU_ID=RECA.SKU_ID
+         
+    WHERE PAH.SITE_ID='MEM'
+           AND SUPPLIER_ID IN ('0008123','0753080039','0008121','8419','80039','32042','54197')
+            AND TRUNC(DUE_DSTAMP)<TRUNC(SYSDATE-0.2)
+             AND REC.DSTAMP IS NULL 
+               AND RECA.DSTAMP IS NULL
+               AND PAH.STATUS <>'Complete'
+    """
+
+
+open_asns_insert = """
+    INSERT INTO Open_ASN (
+        REPORT_DATE
+        ,TYPE
+        ,ASN_ID
+        ,SKU_ID
+        ,SUPPLIER_ID
+        ,QTY_DUE
+        ,ASN_CREATION_DATE
+        ,ASN_STATUS
+        ,RECORD_KEY
+        )
+        VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """
+
+
+open_tags_hlg_lip = """
+    SELECT 
+        TRUNC(SYSDATE-0.19) AS REPORT_DATE
+        ,CASE WHEN SUPPLIER_ID='54197' THEN 'HLG' ELSE 'Lippert' END AS "3PL"
+        ,PALLET_ID
+        ,SKU_ID
+        ,LOCATION_ID
+        ,RECEIPT_DSTAMP
+        ,MOVE_DSTAMP
+        ,QTY_ON_HAND AS QTY
+        ,tag_id
+    FROM DCSDBA.INVENTORY
+    WHERE SITE_ID='MEM'
+    AND V_RIP='Y'
+    AND SUPPLIER_ID IN ('0008123','0753080039','0008121','8419','80039','32042','54197')
+    """
+
+open_tags_hlg_lip_insert = """
+    INSERT INTO HLG_LIP_Open_Tags(
+        REPORT_DATE
+        ,TYPE
+        ,PALLET_ID
+        ,SKU_ID
+        ,LOCATION_ID
+        ,RECEIPT_DSTAMP
+        ,MOVE_DSTAMP
+        ,QTY
+        ,TAG_ID
+        ,RECORD_KEY
+        )
+    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """
+
+
+
 

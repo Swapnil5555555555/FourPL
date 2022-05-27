@@ -154,39 +154,108 @@ def inbound_putaway():
         try:
             azure_cursor.execute(queries.inbound_putaway_insert_query, (
                 row['REPORT_DATE']
-                ,row['TAG_ID']
-                ,row['SKU_ID']
-                ,row['PUTAWAY_DATE']
-                ,row['PUTAWAY_QTY']
-                ,row['BYH_RECEIPT_FROM_CROWN_DATE_']
-                ,row['BYH_RECEIPT_QTY_FROM_CROWN']
-                ,row['CROWN_TRAILER_LOAD_DATE']
-                ,row['CROWN_TRAILER_LOAD_QTY']
+                ,is_none(row['TAG_ID'])
+                ,is_none(row['SKU_ID'])
+                ,is_none(row['PUTAWAY_DATE'])
+                ,is_none(row['PUTAWAY_QTY'])
+                ,is_none(row['BYH_RECEIPT_FROM_CROWN_DATE_'])
+                ,is_none(row['BYH_RECEIPT_QTY_FROM_CROWN'])
+                ,is_none(row['CROWN_TRAILER_LOAD_DATE'])
+                ,is_none(row['CROWN_TRAILER_LOAD_QTY'])
                 ,uuid4()
             ))
+            azure_cnxn.commit()
         except Exception as e:
+            print(row)
             print(e)
             #TODO: Log Failures on report and trigger email report
 
     report_hlg_lip = pd.read_sql(queries.hlg_lip_putaways, oracle_cnxn)
     for index, row in report_hlg_lip.iterrows():
         try:
-            azure_cursor.execute(queries.hlg_lip_putaways, (
+            azure_cursor.execute(queries.hlg_lip_putaways_insert, (
                 row['REPORT_DATE']
-                ,row['3PL']
-                ,row['ASN_ID']
-                ,row['TAG_ID']
-                ,row['SKU_ID']
-                ,row['SUPPLIER_ID']
-                ,row['QTY_RECEIVED']
-                ,row['QTY_PUTAWAY']
-                ,row['RECEIPT_DATE']
-                ,row['PUTAWAY_DATE']
-                ,row['ASN_CREATION_DATE']
-                ,row['ASN_COMPLETION_DATE']
+                ,is_none(row['3PL'])
+                ,is_none(row['ASN_ID'])
+                ,is_none(row['TAG_ID'])
+                ,is_none(row['SKU_ID'])
+                ,is_none(row['SUPPLIER_ID'])
+                ,is_none(row['QTY_RECEIVED'])
+                ,is_none(row['QTY_PUTAWAY'])
+                ,is_none(row['RECEIPT_DATE'])
+                ,is_none(row['PUTAWAY_DATE'])
+                ,is_none(row['ASN_CREATION_DATE'])
+                ,is_none(row['ASN_COMPLETION_DATE'])
+                ,uuid4()
+            ))
+            azure_cnxn.commit()
+        except Exception as e:
+            print(e)
+             #TODO: Log Failures on report and trigger email report
+
+
+def inbound_receipts():
+    report = pd.read_sql(queries.inbound_receipts, oracle_cnxn)
+    for index, row in report.iterrows():
+        try:
+            azure_cursor.execute(queries.inbound_receipts_insert,
+                                 (
+                                     row['REPORT_DATE']
+                                     ,is_none(row['3PL'])
+                                     ,is_none(row['DATE_'])
+                                     ,is_none(row['TAG_ID'])
+                                     ,is_none(row['SKU_ID'])
+                                     ,is_none(row['SUPPLIER_ID'])
+                                     ,is_none(row['QTY'])
+                                     ,uuid4()
+                                 ))
+            azure_cnxn.commit()
+        except Exception as e:
+            print(e)
+            #TODO: Log missed rows in distinct report and distribute...
+            #TODO: Ensure that the information can be distributed...
+
+
+def open_asns():
+    report = pd.read_sql(queries.open_asns, oracle_cnxn)
+    for index, row in report.iterrows():
+        try:
+
+            azure_cursor.execute(queries.open_asns_insert, (
+                row['REPORT_DATE']
+                ,is_none(row['3PL'])
+                ,is_none(row['ASN_ID'])
+                ,is_none(row['SKU_ID'])
+                ,is_none(row['SUPPLIER_ID'])
+                ,is_none(row['QTY_DUE'])
+                ,is_none(row['ASN_CREATION_DATE'])
+                ,is_none(row['ASN_STATUS'])
+                ,uuid4()
+            ))
+            azure_cnxn.commit()
+        except Exception as e:
+            print(e)
+            #TODO: Make sure that all the information was distributed correctly if inpossble include it in the email report
+
+
+def open_tags():
+    report = pd.read_sql(queries.open_tags_hlg_lip, oracle_cnxn)
+    for index, row in report.iterrows():
+        try:
+            azure_cursor.execute(queries.open_tags_hlg_lip_insert, (
+                row['REPORT_DATE']
+                ,is_none(row['3PL'])
+                ,is_none(row['PALLET_ID'])
+                ,is_none(row['SKU_ID'])
+                ,is_none(row['LOCATION_ID'])
+                ,is_none(row['RECEIPT_DSTA)MP'])
+                ,is_none(row['MOVE_DSTAMP'])
+                ,is_none(row['QTY'])
+                ,is_none(row['tag_id'])
                 ,uuid4()
             ))
         except Exception as e:
             print(e)
-            #TODO: Log Failures on report and trigger email report
+            #TODO: Log information and trigger email if failure
+    #TODO: Need to add crown flow to this automation
 
