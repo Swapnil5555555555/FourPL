@@ -404,6 +404,7 @@ open_tags_hlg_lip = """
     AND SUPPLIER_ID IN ('0008123','0753080039','0008121','8419','80039','32042','54197')
     """
 
+
 open_tags_hlg_lip_insert = """
     INSERT INTO HLG_LIP_Open_Tags(
         REPORT_DATE

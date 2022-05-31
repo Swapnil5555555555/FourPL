@@ -248,12 +248,13 @@ def open_tags():
                 ,is_none(row['PALLET_ID'])
                 ,is_none(row['SKU_ID'])
                 ,is_none(row['LOCATION_ID'])
-                ,is_none(row['RECEIPT_DSTA)MP'])
+                ,is_none(row['RECEIPT_DSTAMP'])
                 ,is_none(row['MOVE_DSTAMP'])
                 ,is_none(row['QTY'])
-                ,is_none(row['tag_id'])
+                ,is_none(row['TAG_ID'])
                 ,uuid4()
             ))
+            azure_cnxn.commit()
         except Exception as e:
             print(e)
             #TODO: Log information and trigger email if failure
