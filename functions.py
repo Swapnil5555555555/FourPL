@@ -37,10 +37,17 @@ def standard_cost():
     return
 
 
-def crown_hlg_kits_dp():
-    report = pd.read_sql(queries.crown_hlg_kits_dp_query, oracle_cnxn)
+def crown_hlg_kits_dp(set_report=None):
+
+    if set_report is not None:
+        report = set_report
+    else:
+        report = pd.read_sql(queries.crown_hlg_kits_dp_query, oracle_cnxn)
+
+    report_size = report.shape[0]
     for index, row in report.iterrows():
         try:
+
             azure_cursor.execute(queries.dp_kits_insert_query
                                  , (row['REPORT_DATE']
                                     , row['KIT_BUILDER']
@@ -58,6 +65,9 @@ def crown_hlg_kits_dp():
                                     , uuid4())
                                  )
             azure_cnxn.commit()
+            report_size -= 1
+            print('remaining uploads:', report_size)
+
         except Exception as e:
             print(e)
             # TODO: Log Missed Row Here, and enable email notification
@@ -65,10 +75,16 @@ def crown_hlg_kits_dp():
     return
 
 
-def shipped_lines_query_dp():
-    report = pd.read_sql(queries.shipped_lines_query, oracle_cnxn)
+def shipped_lines_query_dp(set_report=None):
+
+    if set_report is not None:
+        report = set_report
+    else:
+        report = pd.read_sql(queries.shipped_lines_query, oracle_cnxn)
+    size_report = report.shape[0]
     for index, row in report.iterrows():
         try:
+            print('uploading shipped lines', size_report)
             azure_cursor.execute(queries.shipped_lines_insert_query,
                                  (row['REPORT_DATE']
                                   , row['3PL']
@@ -81,6 +97,7 @@ def shipped_lines_query_dp():
                                   , row['SHIPPED_DATE']
                                   , uuid4()))
             azure_cnxn.commit()
+            size_report -= 1
         except Exception as e:
             print(e)
             # TODO: Log missed row on distinct report and distribute
