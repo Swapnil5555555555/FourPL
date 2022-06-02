@@ -79,9 +79,13 @@ def shipped_lines_query_dp(set_report=None):
 
     if set_report is not None:
         report = set_report
+        report['SHIP_BY_DATE'] = report['SHIP_BY_DATE'].astype('datetime64[ns]')
+        report['SHIPPED_DATE'] = report['SHIPPED_DATE'].astype('datetime64[ns]')
     else:
         report = pd.read_sql(queries.shipped_lines_query, oracle_cnxn)
     size_report = report.shape[0]
+    print(report.dtypes)
+
     for index, row in report.iterrows():
         try:
             print('uploading shipped lines', size_report)
