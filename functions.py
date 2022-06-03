@@ -132,17 +132,21 @@ def open_kits():
             pass
 
 
-def des_opc():
+def des_opc(set_report=None):
     curr_date = datetime.now().strftime('%Y-%m-%d')
-    report = pd.read_sql(queries.des_ops_query, oracle_cnxn)
+    if set_report is not None:
+        report = set_report
+    else:
+        report = pd.read_sql(queries.des_ops_query, oracle_cnxn)
     for index, row in report.iterrows():
         try:
             azure_cursor.execute(queries.des_ops_insert_query, (
-                row['SKU_ID']
-                ,row['OPC']
-                ,row['DESCRIPTION']
+                is_none(row['SKU_ID'])
+                ,is_none(row['OPC'])
+                ,is_none(row['DESCRIPTION'])
                 ,curr_date
                 ,uuid4()
+                ,is_none(row['BRAND_OPC'])
             ))
 
             azure_cnxn.commit()
