@@ -157,8 +157,9 @@ des_ops_insert_query = """
         ,DESCRIPTION
         ,REPORT_DATE
         ,RECORD_KEY
+        ,BRAND_OPC
         )
-    VALUES(?, ?, ?, ?, ?)
+    VALUES(?, ?, ?, ?, ?, ?)
     """
 
 
