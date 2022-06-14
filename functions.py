@@ -296,7 +296,7 @@ def open_tags():
             ))
             azure_cnxn.commit()
         except Exception as e:
-            pass
+            print(e)
 
             #TODO: Log information and trigger email if failure
     #TODO: Need to add crown flow to this automation
