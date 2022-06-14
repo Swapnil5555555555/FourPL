@@ -278,6 +278,26 @@ def open_tags():
             azure_cnxn.commit()
         except Exception as e:
             print(e)
+
+    report = pd.read_sql(queries.crown_open_tags, oracle_cnxn)
+    for index, row in report.iterrows():
+        try:
+            azure_cursor.execute(queries.open_tags_hlg_lip_insert, (
+                row['REPORT_DATE']
+                , is_none(row['3PL'])
+                , is_none(row['PALLET_ID'])
+                , is_none(row['SKU_ID'])
+                , is_none(row['LOCATION_ID'])
+                , is_none(row['RECEIPT_DSTAMP'])
+                , is_none(row['MOVE_DSTAMP'])
+                , is_none(row['QTY'])
+                , is_none(row['TAG_ID'])
+                , uuid4()
+            ))
+            azure_cnxn.commit()
+        except Exception as e:
+            pass
+
             #TODO: Log information and trigger email if failure
     #TODO: Need to add crown flow to this automation
 

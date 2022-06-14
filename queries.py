@@ -407,7 +407,7 @@ open_tags_hlg_lip = """
 
 
 open_tags_hlg_lip_insert = """
-    INSERT INTO HLG_LIP_Open_Tags(
+    INSERT INTO OPEN_TAGS(
         REPORT_DATE
         ,TYPE
         ,PALLET_ID
@@ -422,6 +422,24 @@ open_tags_hlg_lip_insert = """
     VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
 
-
-
+crown_open_tags = """
+        SELECT  
+            TRUNC(SYSDATE-0.19) AS REPORT_DATE
+            ,'CRW' AS "3PL"
+            ,PALLET_ID
+            ,INV.SKU_ID
+            ,LOCATION_ID
+            ,RECEIPT_DSTAMP
+            ,MOVE_DSTAMP
+            ,QTY_ON_HAND AS QTY
+            ,INV.tag_id
+        FROM DCSDBA.INVENTORY INV LEFT JOIN 
+            (SELECT DISTINCT TAG_ID, SKU_ID FROM DCSDBA.INVENTORY_TRANSACTION WHERE SITE_ID='MEM' AND TO_LOC_ID LIKE 'CR%') ITL ON INV.TAG_ID=ITL.TAG_ID AND INV.SKU_ID=ITL.SKU_ID
+            LEFT JOIN
+            (SELECT DISTINCT TAG_ID, SKU_ID FROM DCSDBA.INVENTORY_TRANSACTION_ARCHIVE WHERE SITE_ID='MEM' AND TO_LOC_ID LIKE 'CR%' ) ITLA ON INV.TAG_ID=ITLA.TAG_ID AND INV.SKU_ID=ITLA.SKU_ID
+        
+        WHERE SITE_ID='MEM'
+        AND V_RIP='Y'
+        AND ITL.TAG_ID||ITLA.TAG_ID IS NOT NULL
+    """
 
