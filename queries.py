@@ -389,7 +389,7 @@ open_asns_insert = """
 
 
 open_tags_hlg_lip = """
-    SELECT 
+   SELECT 
         TRUNC(SYSDATE-0.19) AS REPORT_DATE
         ,CASE WHEN SUPPLIER_ID='54197' THEN 'HLG' ELSE 'Lippert' END AS "3PL"
         ,PALLET_ID
@@ -403,6 +403,7 @@ open_tags_hlg_lip = """
     WHERE SITE_ID='MEM'
     AND V_RIP='Y'
     AND SUPPLIER_ID IN ('0008123','0753080039','0008121','8419','80039','32042','54197')
+    AND LOCATION_ID NOT LIKE 'CR%'
     """
 
 
@@ -423,16 +424,16 @@ open_tags_hlg_lip_insert = """
     """
 
 crown_open_tags = """
-        SELECT  
+        SELECT 
             TRUNC(SYSDATE-0.19) AS REPORT_DATE
             ,'CRW' AS "3PL"
-            ,PALLET_ID
-            ,INV.SKU_ID
-            ,LOCATION_ID
-            ,RECEIPT_DSTAMP
-            ,MOVE_DSTAMP
-            ,QTY_ON_HAND AS QTY
-            ,INV.tag_id
+            , PALLET_ID
+            , INV.SKU_ID
+            , LOCATION_ID
+            , RECEIPT_DSTAMP
+            , MOVE_DSTAMP
+            , QTY_ON_HAND AS QTY
+            , INV.tag_id
         FROM DCSDBA.INVENTORY INV LEFT JOIN 
             (SELECT DISTINCT TAG_ID, SKU_ID FROM DCSDBA.INVENTORY_TRANSACTION WHERE SITE_ID='MEM' AND TO_LOC_ID LIKE 'CR%') ITL ON INV.TAG_ID=ITL.TAG_ID AND INV.SKU_ID=ITL.SKU_ID
             LEFT JOIN
@@ -441,5 +442,6 @@ crown_open_tags = """
         WHERE SITE_ID='MEM'
         AND V_RIP='Y'
         AND ITL.TAG_ID||ITLA.TAG_ID IS NOT NULL
+        AND INV.LOCATION_ID NOT LIKE 'CR%'
     """
 
