@@ -169,72 +169,250 @@ def crown_prepack_rates():
             #TODO: Log any failed uploads and enable email report
 
 
-def inbound_putaway():
-    report_crown = pd.read_sql(queries.inbound_putaway_query, oracle_cnxn)
+def inbound_putaway(set_crown_report=None, set_hlg_lip_report=None):
+
+    global azure_cnxn, azure_cursor
+
+    if set_crown_report is not None:
+        report_crown = set_crown_report
+        skip_dates = (pd.read_sql(queries.crown_putaways_dates, azure_cnxn))['REPORT_DATE'].to_list()
+    else:
+        report_crown = pd.read_sql(queries.inbound_putaway_query, oracle_cnxn)
+        skip_dates = None
+
+
+    skipped = 0
     for index, row in report_crown.iterrows():
-        try:
-            azure_cursor.execute(queries.inbound_putaway_insert_query, (
-                row['REPORT_DATE']
-                ,is_none(row['TAG_ID'])
-                ,is_none(row['SKU_ID'])
-                ,is_none(row['PUTAWAY_DATE'])
-                ,is_none(row['PUTAWAY_QTY'])
-                ,is_none(row['BYH_RECEIPT_FROM_CROWN_DATE_'])
-                ,is_none(row['BYH_RECEIPT_QTY_FROM_CROWN'])
-                ,is_none(row['CROWN_TRAILER_LOAD_DATE'])
-                ,is_none(row['CROWN_TRAILER_LOAD_QTY'])
-                ,uuid4()
-            ))
-            azure_cnxn.commit()
-        except Exception as e:
-            print(row)
-            print(e)
-            #TODO: Log Failures on report and trigger email report
+        if set_crown_report is not None and skip_dates is not None: #  We can assume that we will always have archive
+            if row['REPORT_DATE'].date() not in skip_dates:
+                try:
+                    azure_cursor.execute(queries.inbound_putaway_insert_query, (
+                        row['REPORT_DATE']
+                        , is_none(row['TAG_ID'])
+                        , is_none(row['SKU_ID'])
+                        , is_none(row['PUTAWAY_DATE'])
+                        , is_none(row['PUTAWAY_QTY'])
+                        , is_none(row['BYH_RECEIPT_FROM_CROWN_DATE_'])
+                        , is_none(row['BYH_RECEIPT_QTY_FROM_CROWN'])
+                        , is_none(row['CROWN_TRAILER_LOAD_DATE'])
+                        , is_none(row['CROWN_TRAILER_LOAD_QTY'])
+                        , uuid4()
+                    ))
+                    azure_cnxn.commit()
+                except Exception as e:
+                    try:
+                        azure_cursor.close()  # Close cursor
+                    except:
+                        pass
+                    try:
+                        azure_cnxn.close()  # Close connection
+                    except:
+                        pass
 
-    report_hlg_lip = pd.read_sql(queries.hlg_lip_putaways, oracle_cnxn)
+                    try:
+                        azure_cnxn = connection.azure_connection()  # Establish a new connection
+                        azure_cursor = azure_cnxn.cursor()  # Open a new cursor
+                        azure_cursor.execute(queries.inbound_putaway_insert_query, (  # attempt to upload record again
+                            row['REPORT_DATE']
+                            , is_none(row['TAG_ID'])
+                            , is_none(row['SKU_ID'])
+                            , is_none(row['PUTAWAY_DATE'])
+                            , is_none(row['PUTAWAY_QTY'])
+                            , is_none(row['BYH_RECEIPT_FROM_CROWN_DATE_'])
+                            , is_none(row['BYH_RECEIPT_QTY_FROM_CROWN'])
+                            , is_none(row['CROWN_TRAILER_LOAD_DATE'])
+                            , is_none(row['CROWN_TRAILER_LOAD_QTY'])
+                            , uuid4()
+                        ))
+                        azure_cnxn.commit()
+                    except Exception as e:
+                        print('Unable to upload row', row, 'due to this error:', e)
+                        pass
+            else:
+                skipped += 1
+                print('Has date, number of rows skipped:', skipped)
+                continue
+        else:
+            try:
+                azure_cursor.execute(queries.inbound_putaway_insert_query, (
+                    row['REPORT_DATE']
+                    ,is_none(row['TAG_ID'])
+                    ,is_none(row['SKU_ID'])
+                    ,is_none(row['PUTAWAY_DATE'])
+                    ,is_none(row['PUTAWAY_QTY'])
+                    ,is_none(row['BYH_RECEIPT_FROM_CROWN_DATE_'])
+                    ,is_none(row['BYH_RECEIPT_QTY_FROM_CROWN'])
+                    ,is_none(row['CROWN_TRAILER_LOAD_DATE'])
+                    ,is_none(row['CROWN_TRAILER_LOAD_QTY'])
+                    ,uuid4()
+                ))
+                azure_cnxn.commit()
+            except Exception as e:
+                print(row)
+                print(e)
+                #TODO: Log Failures on report and trigger email report
+
+    if set_hlg_lip_report is not None:
+        report_hlg_lip = set_hlg_lip_report
+        skip_dates = (pd.read_sql(queries.hlg_lip_putaways_dates))['REPORT_DATE'].to_list()
+    else:
+        report_hlg_lip = pd.read_sql(queries.hlg_lip_putaways, oracle_cnxn)
+        skip_dates = None
+
+    skipped = 0
     for index, row in report_hlg_lip.iterrows():
-        try:
-            azure_cursor.execute(queries.hlg_lip_putaways_insert, (
-                row['REPORT_DATE']
-                ,is_none(row['3PL'])
-                ,is_none(row['ASN_ID'])
-                ,is_none(row['TAG_ID'])
-                ,is_none(row['SKU_ID'])
-                ,is_none(row['SUPPLIER_ID'])
-                ,is_none(row['QTY_RECEIVED'])
-                ,is_none(row['QTY_PUTAWAY'])
-                ,is_none(row['RECEIPT_DATE'])
-                ,is_none(row['PUTAWAY_DATE'])
-                ,is_none(row['ASN_CREATION_DATE'])
-                ,is_none(row['ASN_COMPLETION_DATE'])
-                ,uuid4()
-            ))
-            azure_cnxn.commit()
-        except Exception as e:
-            print(e)
-             #TODO: Log Failures on report and trigger email report
+        if set_hlg_lip_report is not None and skip_dates is not None:
+            if row['REPORT_DATE'].date() not in skip_dates:
+                try:
+                    azure_cursor.execute(queries.hlg_lip_putaways_insert, (
+                        row['REPORT_DATE']
+                        , is_none(row['3PL'])
+                        , is_none(row['ASN_ID'])
+                        , is_none(row['TAG_ID'])
+                        , is_none(row['SKU_ID'])
+                        , is_none(row['SUPPLIER_ID'])
+                        , is_none(row['QTY_RECEIVED'])
+                        , is_none(row['QTY_PUTAWAY'])
+                        , is_none(row['RECEIPT_DATE'])
+                        , is_none(row['PUTAWAY_DATE'])
+                        , is_none(row['ASN_CREATION_DATE'])
+                        , is_none(row['ASN_COMPLETION_DATE'])
+                        , uuid4()
+                    ))
+                    azure_cnxn.commit()
+                except:
+                    try:
+                        azure_cursor.close()
+                    except:
+                        pass
+                    try:
+                        azure_cnxn.close()
+                    except:
+                        pass
+                    try:
+                        azure_cnxn = connection.azure_connection()
+                        azure_cursor = azure_cnxn.cursor()
+                        azure_cursor.execute(queries.hlg_lip_putaways_insert, (
+                            row['REPORT_DATE']
+                            , is_none(row['3PL'])
+                            , is_none(row['ASN_ID'])
+                            , is_none(row['TAG_ID'])
+                            , is_none(row['SKU_ID'])
+                            , is_none(row['SUPPLIER_ID'])
+                            , is_none(row['QTY_RECEIVED'])
+                            , is_none(row['QTY_PUTAWAY'])
+                            , is_none(row['RECEIPT_DATE'])
+                            , is_none(row['PUTAWAY_DATE'])
+                            , is_none(row['ASN_CREATION_DATE'])
+                            , is_none(row['ASN_COMPLETION_DATE'])
+                            , uuid4()
+                        ))
+                        azure_cnxn.commit()
+                    except Exception as e:
+                        print('unable to upload row', row, 'due to this error:', e)
+                        continue
+
+            else:
+                skipped += 1
+                print('Has date, number of skipped:', skipped)
+                continue
+        else:
+            try:
+                azure_cursor.execute(queries.hlg_lip_putaways_insert, (
+                    row['REPORT_DATE']
+                    ,is_none(row['3PL'])
+                    ,is_none(row['ASN_ID'])
+                    ,is_none(row['TAG_ID'])
+                    ,is_none(row['SKU_ID'])
+                    ,is_none(row['SUPPLIER_ID'])
+                    ,is_none(row['QTY_RECEIVED'])
+                    ,is_none(row['QTY_PUTAWAY'])
+                    ,is_none(row['RECEIPT_DATE'])
+                    ,is_none(row['PUTAWAY_DATE'])
+                    ,is_none(row['ASN_CREATION_DATE'])
+                    ,is_none(row['ASN_COMPLETION_DATE'])
+                    ,uuid4()
+                ))
+                azure_cnxn.commit()
+            except Exception as e:
+                print(e)
+                 #TODO: Log Failures on report and trigger email report
 
 
-def inbound_receipts():
-    report = pd.read_sql(queries.inbound_receipts, oracle_cnxn)
+def inbound_receipts(set_report=None):
+    global azure_cnxn, azure_cursor
+    if set_report is not None:
+        report = set_report
+        skip_dates = (pd.read_sql(queries.receipt_dates, azure_cnxn))['REPORT_DATE'].to_list()
+    else:
+        report = pd.read_sql(queries.inbound_receipts, oracle_cnxn)
+        skip_dates = None
+
+
+    skipped = 0
+
     for index, row in report.iterrows():
-        try:
-            azure_cursor.execute(queries.inbound_receipts_insert,
-                                 (
-                                     row['REPORT_DATE']
-                                     ,is_none(row['3PL'])
-                                     ,is_none(row['DATE_'])
-                                     ,is_none(row['TAG_ID'])
-                                     ,is_none(row['SKU_ID'])
-                                     ,is_none(row['SUPPLIER_ID'])
-                                     ,is_none(row['QTY'])
-                                     ,uuid4()
-                                 ))
-            azure_cnxn.commit()
-        except Exception as e:
-            print(e)
-            #TODO: Log missed rows in distinct report and distribute...
-            #TODO: Ensure that the information can be distributed...
+        if set_report is not None and skip_dates is not None and len(skip_dates) > 0:
+            if row['REPORT_DATE'].date() not in skip_dates:
+                try:
+                    azure_cursor.execute(queries.inbound_receipts_insert,
+                                         (
+                                             row['REPORT_DATE']
+                                             , is_none(row['3PL'])
+                                             , is_none(row['DATE_'])
+                                             , is_none(row['TAG_ID'])
+                                             , is_none(row['SKU_ID'])
+                                             , is_none(row['SUPPLIER_ID'])
+                                             , is_none(row['QTY'])
+                                             , uuid4()
+                                         ))
+                    azure_cnxn.commit()
+                except Exception as e:
+                    try:
+                        azure_cursor.close()
+                        azure_cnxn.close()
+                    except:
+                        pass
+                    try:
+                        azure_cnxn = connection.azure_connection()
+                        azure_cursor = azure_cnxn.cursor()
+                        azure_cursor.execute(queries.inbound_receipts_insert,
+                                             (
+                                                 row['REPORT_DATE']
+                                                 , is_none(row['3PL'])
+                                                 , is_none(row['DATE_'])
+                                                 , is_none(row['TAG_ID'])
+                                                 , is_none(row['SKU_ID'])
+                                                 , is_none(row['SUPPLIER_ID'])
+                                                 , is_none(row['QTY'])
+                                                 , uuid4()
+                                             ))
+                        azure_cnxn.commit()
+                    except Exception as e:
+                        print('COULD NOT UPLOAD THIS RECORD', row, e)
+                        pass
+            else:
+                skipped += 1
+                print('Has date, number of skipped:', skipped)
+                pass
+        else:
+            try:
+                azure_cursor.execute(queries.inbound_receipts_insert,
+                                     (
+                                         row['REPORT_DATE']
+                                         ,is_none(row['3PL'])
+                                         ,is_none(row['DATE_'])
+                                         ,is_none(row['TAG_ID'])
+                                         ,is_none(row['SKU_ID'])
+                                         ,is_none(row['SUPPLIER_ID'])
+                                         ,is_none(row['QTY'])
+                                         ,uuid4()
+                                     ))
+                azure_cnxn.commit()
+            except Exception as e:
+                print(e)
+                #TODO: Log missed rows in distinct report and distribute...
+                #TODO: Ensure that the information can be distributed...
 
 
 def open_asns():

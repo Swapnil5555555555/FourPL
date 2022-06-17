@@ -445,3 +445,13 @@ crown_open_tags = """
         AND INV.LOCATION_ID NOT LIKE 'CR%'
     """
 
+receipt_dates = """
+    SELECT DISTINCT(REPORT_DATE) FROM Receipts ORDER BY REPORT_DATE DESC
+    """
+
+crown_putaways_dates = """
+        SELECT DISTINCT(REPORT_DATE) FROM Crown_Putaways ORDER BY REPORT_DATE DESC
+    """
+hlg_lip_putaways_dates = """
+    SELECT DISTINCT(REPORT_DATE) FROM HLG_LIP_Putaways ORDER BY REPORT_DATE DESC
+    """
