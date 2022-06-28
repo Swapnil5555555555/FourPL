@@ -455,3 +455,219 @@ crown_putaways_dates = """
 hlg_lip_putaways_dates = """
     SELECT DISTINCT(REPORT_DATE) FROM HLG_LIP_Putaways ORDER BY REPORT_DATE DESC
     """
+
+THREE_PL_COST = """
+                        SELECT TRUNC(SYSDATE-0.15) AS REPORT_DATE,'LIP' AS "3PL", CODE,TRUNC(DSTAMP) AS TRANSACTION_DATE, TAG_ID, ITL.SKU_ID, SUPPLIER_ID, UPDATE_QTY AS QTY
+
+                        FROM DCSDBA.INVENTORY_TRANSACTION ITL
+                        WHERE ITL.SITE_ID='MEM'
+                        AND SUPPLIER_ID IN ('0008123','0753080039','0008121','8419','80039','32042')
+                        AND CODE='Receipt'
+                        AND TRUNC (DSTAMP) =TRUNC(SYSDATE-1.19)
+
+                        union ALL
+
+                        SELECT TRUNC(SYSDATE-0.15) AS REPORT_DATE,'HLG' AS "3PL", CODE,TRUNC(DSTAMP) AS TRANSACTION_DATE, TAG_ID, ITL.SKU_ID, SUPPLIER_ID, UPDATE_QTY AS QTY
+                        FROM DCSDBA.INVENTORY_TRANSACTION ITL
+                        WHERE ITL.SITE_ID='MEM'
+                        AND CODE='Receipt'
+                        AND SUPPLIER_ID='54197'
+                        AND TRUNC (DSTAMP) =TRUNC(SYSDATE-1.19)
+
+                        UNION ALL
+
+                        SELECT TRUNC(SYSDATE-0.15) AS REPORT_DATE,'CRW' AS "3PL", CODE,TRUNC(DSTAMP) AS TRANSACTION_DATE, TAG_ID, ITL.SKU_ID, SUPPLIER_ID, UPDATE_QTY AS QTY
+                        FROM DCSDBA.INVENTORY_TRANSACTION ITL
+                        WHERE ITL.SITE_ID='MEM'
+                        AND FROM_LOC_ID LIKE 'CR%OT%'
+                        AND TO_LOC_ID NOT LIKE 'CR%'
+                        AND TRUNC (DSTAMP) =TRUNC(SYSDATE-1.19)
+                    """
+
+INSERT_DBO_COST_THREEPL = """
+                        INSERT INTO COST_THREEPL(
+                            REPORT_DATE
+                            ,TYPE
+                            ,CODE
+                            ,TRANSACTION_DATE
+                            ,TAG_ID
+                            ,SKU_ID
+                            ,SUPPLIER_ID
+                            ,QTY
+                            ,RECORD_KEY
+                        )VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """
+
+WORK_IN_PROGRESS = """
+                    Select TRUNC(SYSDATE) AS REPORT_DATE,
+                    "RECEIVED DATE",
+                    LAST_MOVE,
+                    MIN(CED) AS CROWN_ENTRY_DATE,
+                    "Returns?",
+                    PALLET,
+                    TAG,
+                    BINLOC,
+                    SKU,
+                    QOH,
+                    DESCRIPTION,
+                    ORIGIN,
+                    SUPPLIER,
+                    SUPP_PALLET,
+                    CONDITION_CODE
+                    FROM(
+                    
+                    
+                    
+                    Select distinct
+                    
+                    "RECEIVED DATE",
+                    LAST_MOVE,
+                    CASE WHEN CR_INN IS NOT NULL THEN CR_INN ELSE CR_IN END AS CED,
+                    case WHEN trim(SUBSTR(CRINA.REFERENCE_ID,1,3)|| SUBSTR(CRIN.REFERENCE_ID,1,3))<>'000' THEN 'Not Returns' ELSE 'Returns' end AS "Returns?",
+                    PALLET,
+                    TAG,
+                    BINLOC,
+                    SKU,
+                    QOH,
+                    LPA.DESCRIPTION,
+                    ORIGIN,
+                    SUPPLIER,
+                    SUPP_PALLET,
+                    CONDITION_CODE
+                    From
+                    (
+                    SELECT
+                    CASE
+                    WHEN inv.V_RIP = 'Y'
+                    THEN (CAST (upl.receipt_dstamp AS DATE))
+                    ELSE NULL
+                    END "RECEIVED DATE",
+                    CASE
+                    WHEN inv.V_RIP = 'Y'
+                    THEN TRUNC (SYSDATE - CAST (upl.receipt_dstamp AS DATE))
+                    ELSE NULL
+                    END DAYS,
+                    CASE
+                    WHEN inv.V_RIP = 'Y'
+                    THEN CAST (inv.move_dstamp AS DATE)
+                    ELSE NULL
+                    END LAST_MOVE,
+                    CASE WHEN inv.V_RIP = 'Y' THEN inv.pallet_id ELSE NULL END PALLET,
+                    CASE WHEN inv.V_RIP = 'Y' THEN inv.tag_id ELSE inv.tag_id END TAG,
+                    CASE
+                    WHEN inv.V_RIP = 'Y' THEN inv.location_id
+                    ELSE inv.location_id
+                    END BINLOC,
+                    CASE WHEN inv.V_RIP = 'Y' THEN inv.sku_id ELSE inv.sku_id END SKU,
+                    CASE
+                    WHEN inv.V_RIP = 'Y' THEN inv.qty_on_hand
+                    ELSE inv.qty_on_hand
+                    END QOH,
+                    CASE
+                    WHEN inv.V_RIP = 'Y' THEN inv.config_id
+                    ELSE inv.config_id
+                    END CONFIG,
+                    CASE
+                    WHEN inv.V_RIP = 'Y' THEN TRANSLATE (inv.description, ',.;', ' ')
+                    ELSE NULL
+                    END DESCRIPTION,
+                    inv.origin_id ORIGIN,
+                    CASE WHEN inv.V_RIP = 'Y' THEN inv.supplier_id ELSE NULL END SUPPLIER,
+                    CASE
+                    WHEN inv.V_RIP = 'Y'
+                    THEN
+                    NVL ((SELECT v_supplier_pallet_id
+                    FROM dcsdba.upi_receipt_header uph
+                    WHERE upl.pallet_id = uph.pallet_id),
+                    '')
+                    ELSE NULL
+                    END SUPP_PALLET,
+                    CASE WHEN inv.V_RIP = 'Y' THEN inv.condition_id ELSE NULL END CONDITION_CODE,
+                    inr.receipt_id RECEIPT_ID,
+                    inr.sku_id "SKU?",
+                    TRUNC (
+                    CAST (
+                    NVL (
+                    (SELECT ul.receipt_dstamp
+                    FROM dcsdba.upi_receipt_line ul
+                    WHERE inr.receipt_id = ul.pallet_id
+                    AND inr.sku_id = ul.sku_id
+                    AND ROWNUM = 1),
+                    '') AS DATE)) "RECEIPT DAY"
+                    
+                    FROM DCSDBA.INVENTORY INV
+                    INNER JOIN DCSDBA.LOCATION LOC
+                    ON (INV.SITE_ID = LOC.SITE_ID AND INV.location_id = loc.location_id)
+                    INNER JOIN DCSDBA.INVENTORY INR
+                    ON (INV.SITE_ID = INR.SITE_ID AND INV.SKU_ID = INR.SKU_ID AND INR.V_RIP = 'Y')
+                    LEFT OUTER JOIN DCSDBA.UPI_RECEIPT_LINE UPL
+                    ON (INV.RECEIPT_ID = UPL.PALLET_ID AND INV.CLIENT_ID = UPL.CLIENT_ID AND INV.V_RIP = 'Y' AND INV.SKU_ID = UPL.SKU_ID)
+                    LEFT OUTER JOIN DCSDBA.UPI_RECEIPT_LINE UL
+                    ON (INR.RECEIPT_ID = UL.PALLET_ID AND INR.CLIENT_ID = UL.CLIENT_ID AND (CAST (ul.receipt_dstamp AS DATE) <= TO_DATE (CURRENT_DATE - 1)))
+                    
+                    
+                    
+                    WHERE
+                    INV.CLIENT_ID = 'VPNA'
+                    AND INV.SITE_ID = 'MEM'
+                    AND (LOC.LOC_TYPE = 'Tag-FIFO' OR INV.v_rip = 'Y')
+                    ) LPA
+                    LEFT JOIN
+                    (SELECT TAG_ID, SKU_ID,REFERENCE_ID, MIN(DSTAMP) AS CR_IN
+                    FROM DCSDBA.INVENTORY_TRANSACTION
+                    WHERE SITE_ID='MEM'
+                    AND TO_LOC_ID LIKE 'CR%'
+                    GROUP BY TAG_ID, SKU_ID, REFERENCE_ID
+                    ) CRIN ON LPA.TAG=CRIN.TAG_ID
+                    LEFT JOIN
+                    
+                    
+                    
+                    (SELECT TAG_ID, SKU_ID,REFERENCE_ID, MIN(DSTAMP) AS CR_INN
+                    FROM DCSDBA.INVENTORY_TRANSACTION_ARCHIVE
+                    WHERE SITE_ID='MEM'
+                    AND TO_LOC_ID LIKE 'CR%'
+                    GROUP BY TAG_ID, SKU_ID, REFERENCE_ID
+                    ) CRINA ON LPA.TAG=CRINA.TAG_ID
+                    where
+                    "RECEIVED DATE" is not null
+                    and SUBSTR(BINLOC,1,2)='CR')
+                    GROUP BY
+                    
+                    
+                    
+                    "RECEIVED DATE",
+                    LAST_MOVE,
+                    "Returns?",
+                    PALLET,
+                    TAG,
+                    BINLOC,
+                    SKU,
+                    QOH,
+                    DESCRIPTION,
+                    ORIGIN,
+                    SUPPLIER,
+                    SUPP_PALLET,
+                    CONDITION_CODE
+                    """
+
+INSERT_DBO_CROWN_WORK_IN_PROCESS = """  
+                                    INSERT INTO CROWN_WORK_IN_PROCESS(
+                                        REPORT_DATE
+                                        ,RECEIVED_DATE
+                                        ,LAST_MOVE
+                                        ,CROWN_ENTRY_DATE
+                                        ,IS_RETURNED
+                                        ,PALLET
+                                        ,TAG_ID
+                                        ,BINLOC
+                                        ,SKU_ID
+                                        ,QOH
+                                        ,DESCRIPTION
+                                        ,ORIGIN
+                                        ,SUPPLIER
+                                        ,SUPP_PALLET
+                                        ,CONDITION_CODE
+                                        ,RECORD_KEY
+                                    )VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)                           
+                                    """
