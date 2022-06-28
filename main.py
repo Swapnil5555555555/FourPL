@@ -10,3 +10,7 @@ func.inbound_putaway()
 func.inbound_receipts()
 func.open_asns()
 func.open_tags()
+
+#General Flows
+func.three_pl_cost()
+func.crown_work_in_process()
