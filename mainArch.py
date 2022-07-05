@@ -3,7 +3,7 @@ from functions import (shipped_lines_query_dp
     , des_opc
     , open_tags
     , inbound_receipts
-    , inbound_putaway )
+    , inbound_putaway_hlg_lip)
 
 import pandas as pd
 import os
@@ -24,10 +24,11 @@ download_path = rf'C:\Users\{aNumber}\Downloads'
 # archived_receipts = pd.read_excel(os.path.join(download_path, 'Data Archives IB Dashboard.xlsx'), sheet_name='Receipts')
 # inbound_receipts(set_report=archived_receipts)
 
-archived_crwn_putaways = pd.read_excel(os.path.join(download_path, 'Data Archives IB Dashboard.xlsx')
-                                       ,sheet_name='CRW Putaways')
-archived_hlg_lip_putaways = pd.read_excel(os.path.join(download_path, 'Data Archives IB Dashboard.xlsx')
-                                          ,sheet_name='HLG LIP Putaways')
-inbound_putaway(set_crown_report=archived_crwn_putaways, set_hlg_lip_report=archived_hlg_lip_putaways)
+# archived_crwn_putaways = pd.read_excel(os.path.join(download_path, 'Data Archives IB Dashboard.xlsx')
+#                                        ,sheet_name='CRW Putaways')
+archived_hlg_lip_putaways = pd.read_excel(r"arch/Data Archives IB Dashboard.xlsx", sheet_name='HLG LIP Putaways')
+
+inbound_putaway_hlg_lip(set_hlg_lip_report=archived_hlg_lip_putaways)
+
 
 
