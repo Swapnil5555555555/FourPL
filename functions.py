@@ -257,9 +257,15 @@ def inbound_putaway(set_crown_report=None, set_hlg_lip_report=None):
                 print(e)
                 #TODO: Log Failures on report and trigger email report
 
+
     if set_hlg_lip_report is not None:
         report_hlg_lip = set_hlg_lip_report
         skip_dates = (pd.read_sql(queries.hlg_lip_putaways_dates, azure_cnxn))['REPORT_DATE'].to_list()
+        report_crown['PUTAWAY_DATE'] = pd.to_datetime(report_crown['PUTAWAY_DATE'])
+        report_crown['BYH_RECEIPT_FROM_CROWN_DATE_'] = pd.to_datetime(report_crown['BYH_RECEIPT_FROM_CROWN_DATE_'])
+        report_crown['CROWN_TRAILER_LOAD_DATE'] = pd.to_datetime(report_crown['CROWN_TRAILER_LOAD_DATE'])
+        report_crown['BYH_RECEIPT_QTY_FROM_CROWN'] = (report_crown['BYH_RECEIPT_QTY_FROM_CROWN'].fillna(0)).astype(
+            'int64')
     else:
         report_hlg_lip = pd.read_sql(queries.hlg_lip_putaways, oracle_cnxn)
         skip_dates = None
@@ -518,11 +524,16 @@ def three_pl_cost(set_report=None):
 
 
 def crown_work_in_process(set_report=None):
+    global azure_cnxn, azure_cursor
 
     if set_report is not None:
+
         report = set_report
-        dates = None #TODO: Create query to get current dates in the database and turn them into a set for constant lookup time, this will be very useful
+        dates = (pd.read_sql(queries.DATES_CROWN_WORK_IN_PROCESS, oracle_cnxn))['REPORT_DATE'].to_list()
+        dates = set(dates)
+
     else:
+
         report = pd.read_sql(queries.WORK_IN_PROGRESS, oracle_cnxn)
 
 
@@ -550,6 +561,33 @@ def crown_work_in_process(set_report=None):
             except Exception as e:
                 pass
         else:
-            #         #TODO: Upload to Azure from archive report
-            pass
+            curr_date = row['REPORT_DATE']
+            if curr_date in dates:
+                continue
+
+            try:
+                azure_cursor.execute(queries.INSERT_DBO_CROWN_WORK_IN_PROCESS,
+                                     row['REPORT_DATE'],
+                                     is_none(row['RECEIVED DATE']),
+                                     is_none(row['LAST_MOVE']),
+                                     is_none(row['CROWN_ENTRY_DATE']),
+                                     is_none(row['Returns?']),
+                                     is_none(row['PALLET']),
+                                     is_none(row['TAG']),
+                                     is_none(row['BINLOC']),
+                                     is_none(row['SKU']),
+                                     is_none(row['QOH']),
+                                     is_none(row['DESCRIPTION']),
+                                     is_none(row['ORIGIN']),
+                                     is_none(row['SUPPLIER']),
+                                     is_none(row['SUPP_PALLET']),
+                                     is_none(row['CONDITION_CODE']),
+                                     uuid4())
+                azure_cnxn.commit()
+            except:
+
+                azure_cursor.close()
+
+
+
 

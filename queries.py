@@ -423,6 +423,7 @@ open_tags_hlg_lip_insert = """
     VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
 
+
 crown_open_tags = """
         SELECT 
             TRUNC(SYSDATE-0.19) AS REPORT_DATE
@@ -445,16 +446,21 @@ crown_open_tags = """
         AND INV.LOCATION_ID NOT LIKE 'CR%'
     """
 
+
 receipt_dates = """
     SELECT DISTINCT(REPORT_DATE) FROM Receipts ORDER BY REPORT_DATE DESC
     """
 
+
 crown_putaways_dates = """
         SELECT DISTINCT(REPORT_DATE) FROM Crown_Putaways ORDER BY REPORT_DATE DESC
     """
+
+
 hlg_lip_putaways_dates = """
     SELECT DISTINCT(REPORT_DATE) FROM HLG_LIP_Putaways ORDER BY REPORT_DATE DESC
     """
+
 
 THREE_PL_COST = """
                         SELECT TRUNC(SYSDATE-0.15) AS REPORT_DATE,'LIP' AS "3PL", CODE,TRUNC(DSTAMP) AS TRANSACTION_DATE, TAG_ID, ITL.SKU_ID, SUPPLIER_ID, UPDATE_QTY AS QTY
@@ -484,6 +490,7 @@ THREE_PL_COST = """
                         AND TRUNC (DSTAMP) =TRUNC(SYSDATE-1.19)
                     """
 
+
 INSERT_DBO_COST_THREEPL = """
                         INSERT INTO COST_THREEPL(
                             REPORT_DATE
@@ -497,6 +504,7 @@ INSERT_DBO_COST_THREEPL = """
                             ,RECORD_KEY
                         )VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """
+
 
 WORK_IN_PROGRESS = """
                     Select TRUNC(SYSDATE) AS REPORT_DATE,
@@ -651,6 +659,7 @@ WORK_IN_PROGRESS = """
                     CONDITION_CODE
                     """
 
+
 INSERT_DBO_CROWN_WORK_IN_PROCESS = """  
                                     INSERT INTO CROWN_WORK_IN_PROCESS(
                                         REPORT_DATE
@@ -671,3 +680,8 @@ INSERT_DBO_CROWN_WORK_IN_PROCESS = """
                                         ,RECORD_KEY
                                     )VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)                           
                                     """
+
+
+DATES_CROWN_WORK_IN_PROCESS = """
+                                SELECT DISTINCT REPORT_DATE FROM CROWN_WORK_IN_PROCESS
+                                """
