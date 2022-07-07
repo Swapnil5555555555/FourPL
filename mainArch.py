@@ -1,15 +1,17 @@
 from functions import (shipped_lines_query_dp
-    , crown_hlg_kits_dp
-    , des_opc
-    , open_tags
-    , inbound_receipts
-    , inbound_putaway_hlg_lip)
-
+, crown_hlg_kits_dp
+, des_opc
+, open_tags
+, inbound_receipts
+, inbound_putaway_hlg_lip
+, three_pl_cost)
 import pandas as pd
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
 # open_tags()
-aNumber = 'A339580'
+aNumber = os.environ.get('VOLVO_PC_USER')
 download_path = rf'C:\Users\{aNumber}\Downloads'
 
 # archive_shipped_kits = pd.read_excel(r'C:\Users\A381375\Downloads\3PL OB Archive Data BYH 2022.xlsx', sheet_name='Shipped Kits')
@@ -26,9 +28,14 @@ download_path = rf'C:\Users\{aNumber}\Downloads'
 
 # archived_crwn_putaways = pd.read_excel(os.path.join(download_path, 'Data Archives IB Dashboard.xlsx')
 #                                        ,sheet_name='CRW Putaways')
-archived_hlg_lip_putaways = pd.read_excel(r"arch/Data Archives IB Dashboard.xlsx", sheet_name='HLG LIP Putaways')
 
-inbound_putaway_hlg_lip(set_hlg_lip_report=archived_hlg_lip_putaways)
+# archived_hlg_lip_putaways = pd.read_excel(r"arch/Data Archives IB Dashboard.xlsx", sheet_name='HLG LIP Putaways')
+# inbound_putaway_hlg_lip(set_hlg_lip_report=archived_hlg_lip_putaways)
+
+archived_threepl_cost = pd.read_excel(os.path.join(download_path, ))
+three_pl_cost(set_report=archived_threepl_cost)
+
+
 
 
 
