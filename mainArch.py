@@ -32,7 +32,8 @@ download_path = rf'C:\Users\{aNumber}\Downloads'
 # archived_hlg_lip_putaways = pd.read_excel(r"arch/Data Archives IB Dashboard.xlsx", sheet_name='HLG LIP Putaways')
 # inbound_putaway_hlg_lip(set_hlg_lip_report=archived_hlg_lip_putaways)
 
-archived_threepl_cost = pd.read_excel(os.path.join(download_path, ))
+archived_threepl_cost = pd.read_excel(os.path.join(download_path, '3PL Costs Archive.xlsx'))
+
 three_pl_cost(set_report=archived_threepl_cost)
 
 

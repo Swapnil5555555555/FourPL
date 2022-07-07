@@ -500,6 +500,7 @@ def open_tags():
 
 def three_pl_cost(set_report=None):
 
+    global azure_cnxn, azure_cursor
 
     if set_report is not None:
         report = set_report
@@ -523,10 +524,49 @@ def three_pl_cost(set_report=None):
                 print(e)
                 pass
         else:
-            #TODO: Develop Algorithm to upload archive to the tables!
-            pass
+            try:
+                azure_cursor.execute(queries.INSERT_DBO_COST_THREEPL,
+                                     row['REPORT_DATE'],
+                                     is_none(row['3PL']),
+                                     is_none(row['CODE']),
+                                     is_none(row['TRANSACTION_DATE']),
+                                     is_none(row['TAG_ID']),
+                                     is_none(row['SKU_ID']),
+                                     is_none(row['SUPPLIER_ID']),
+                                     is_none(row['QTY']),
+                                     uuid4())
+                azure_cnxn.commit()
+            except Exception as e:
+                try:
+                    azure_cnxn.close()
+                except:
+                    pass
+                try:
+                    azure_cursor.close()
+                except:
+                    pass
 
-    azure_cnxn.commit()
+                try:
+                    azure_cnxn = connection.azure_connection()
+                    azure_cursor = azure_cnxn.cursor()
+                    azure_cursor.execute(queries.INSERT_DBO_COST_THREEPL,
+                                         row['REPORT_DATE'],
+                                         is_none(row['3PL']),
+                                         is_none(row['CODE']),
+                                         is_none(row['TRANSACTION_DATE']),
+                                         is_none(row['TAG_ID']),
+                                         is_none(row['SKU_ID']),
+                                         is_none(row['SUPPLIER_ID']),
+                                         is_none(row['QTY']),
+                                         uuid4())
+                    azure_cnxn.commit()
+                except Exception as e:
+                    print(f'Was not able to upload: {row} due to the following error: {e}')
+                    pass
+
+
+
+
 
 
 def crown_work_in_process(set_report=None):
