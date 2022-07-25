@@ -523,7 +523,7 @@ def three_pl_cost(set_report=None):
             except Exception as e:
                 print(e)
                 pass
-        else:
+        elif set_report is not None and is_none(row['SUPPLIER_ID']) is None:
             try:
                 azure_cursor.execute(queries.INSERT_DBO_COST_THREEPL,
                                      row['REPORT_DATE'],
