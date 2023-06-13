@@ -501,7 +501,7 @@ def open_tags():
 def three_pl_cost(set_report=None):
 
     global azure_cnxn, azure_cursor
-
+    failed = 0
     if set_report is not None:
         report = set_report
         dates = None
@@ -521,9 +521,10 @@ def three_pl_cost(set_report=None):
                                      is_none(row['QTY']),
                                      uuid4())
             except Exception as e:
+                failed += 1
                 print(e)
                 pass
-        elif set_report is not None and is_none(row['SUPPLIER_ID']) is None:
+        elif set_report is not None:
             try:
                 azure_cursor.execute(queries.INSERT_DBO_COST_THREEPL,
                                      row['REPORT_DATE'],
@@ -537,6 +538,8 @@ def three_pl_cost(set_report=None):
                                      uuid4())
                 azure_cnxn.commit()
             except Exception as e:
+                failed += 1
+                print('this row failed', row)
                 try:
                     azure_cnxn.close()
                 except:
@@ -563,7 +566,11 @@ def three_pl_cost(set_report=None):
                 except Exception as e:
                     print(f'Was not able to upload: {row} due to the following error: {e}')
                     pass
-
+        else:
+            failed += 1
+            print('not doing anything with this record', row)
+        
+        print('FAILED ROWS', failed)
 
 
 

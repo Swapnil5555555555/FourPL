@@ -487,7 +487,7 @@ THREE_PL_COST = """
                         SELECT TRUNC(SYSDATE-0.15) AS REPORT_DATE,'CRW' AS "3PL", CODE,TRUNC(DSTAMP) AS TRANSACTION_DATE, TAG_ID, ITL.SKU_ID, SUPPLIER_ID, UPDATE_QTY AS QTY
                         FROM DCSDBA.INVENTORY_TRANSACTION ITL
                         WHERE ITL.SITE_ID='MEM'
-                        AND FROM_LOC_ID LIKE 'CR%OT%'
+                        AND FROM_LOC_ID LIKE 'CR%'
                         AND TO_LOC_ID NOT LIKE 'CR%'
                         AND TRUNC (DSTAMP) =TRUNC(SYSDATE-1.19)
                     """
@@ -687,3 +687,12 @@ INSERT_DBO_CROWN_WORK_IN_PROCESS = """
 DATES_CROWN_WORK_IN_PROCESS = """
                                 SELECT DISTINCT REPORT_DATE FROM CROWN_WORK_IN_PROCESS
                                 """
+
+BACKTRACK_CRWN_COST = """
+      SELECT TRUNC(DSTAMP+1.15) AS REPORT_DATE,'CRW' AS "3PL", CODE,TRUNC(DSTAMP) AS TRANSACTION_DATE, TAG_ID, ITL.SKU_ID, SUPPLIER_ID, UPDATE_QTY AS QTY
+                        FROM DCSDBA.INVENTORY_TRANSACTION ITL
+                        WHERE ITL.SITE_ID='MEM'
+                        AND FROM_LOC_ID LIKE 'CR%'
+                        AND TO_LOC_ID NOT LIKE 'CR%'
+                     AND EXTRACT(YEAR FROM DSTAMP)='2023'
+    """
