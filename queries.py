@@ -635,7 +635,7 @@ INSERT_CRN_LIP_PRODUCTIVITY = """
 LIP_AGING_GR="""
     SELECT TRUNC(SYSDATE) AS REPORT_DATE, 
             INV.SITE_ID, 
-            case WHEN SUBSTR(RECEIPT_ID,1,3) IN ('000')  THEN 1 ELSE 0 end AS "Returns",
+            case WHEN SUBSTR(RECEIPT_ID,1,3) IN ('000')  THEN 1 ELSE 0 end AS "IS_RETURNS",
             INV.DESCRIPTION, 
             INV.ORIGIN_ID AS ORIGIN, 
             INV.SUPPLIER_ID AS SUPPLIER, 
@@ -670,8 +670,7 @@ INSERT_LIP_AGING = """
     ,QOH
     ,LAST_MOVE
     ,RECEIVED_DATE
-    ,CONDITION_CODE 
-)
+    ,CONDITION_CODE
     )
     VALUES 
     (

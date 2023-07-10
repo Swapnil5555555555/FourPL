@@ -643,7 +643,6 @@ def crown_work_in_process(set_report=None):
 
 
 
-
 def crown_lipert_productivity():
     
     global azure_cnxn, azure_cursor, oracle_cnxn
@@ -651,23 +650,32 @@ def crown_lipert_productivity():
     
     oracle_sql_query = queries.CRN_LIP_PRODUCTIVITY
     productivity_df = pd.read_sql(oracle_sql_query, oracle_cnxn)
-
-    for index, row in productivity_df.iterrows():
-        # if set_report is None:
-            # try:
-        try:
-            azure_cursor.execute(queries.INSERT_CRN_LIP_PRODUCTIVITY,
+    
+    def upload(row):
+        azure_cursor.execute(queries.INSERT_CRN_LIP_PRODUCTIVITY,
                                     is_none(row['TYPE']),
                                     is_none(row['SKU_ID']),
                                     is_none(row['TAG_ID']),
                                     is_none(row['DSTAMP']),
                                     is_none(row['QTY']))
-            azure_cnxn.commit()
+        azure_cnxn.commit()
+        
+    print(productivity_df.shape)
+    for index, row in productivity_df.iterrows():
+        try:
+            upload(row)
         except Exception as error:
             print(error)
-            # TODO: Send an email that a record failed. Log the record
+            try:
+                azure_cnxn.close()
+            except:
+                print('unable to close connection')
+             
+            azure_cnxn = connection.azure_connection()
+            azure_cursor = azure_cnxn.cursor()
+            upload(row)
             
-    
+
 def lippert_aging_gr():
     
     global azure_cnxn, azure_cursor, oracle_cnxn
@@ -676,11 +684,9 @@ def lippert_aging_gr():
     oracle_sql_query = queries.LIP_AGING_GR
     productivity_df = pd.read_sql(oracle_sql_query, oracle_cnxn)
 
-    for index, row in productivity_df.iterrows():
-        # if set_report is None:
-            # try:
-        try:
-            azure_cursor.execute(queries.INSERT_LIP_AGING,
+
+    def upload(row):
+        azure_cursor.execute(queries.INSERT_LIP_AGING,
                                     is_none(row['REPORT_DATE']),
                                     is_none(row['SITE_ID']),
                                     is_none(row['IS_RETURNS']),
@@ -695,6 +701,21 @@ def lippert_aging_gr():
                                     is_none(row['LAST_MOVE']),
                                     is_none(row['RECEIVED_DATE']),
                                     is_none(row['CONDITION_CODE']))
+        azure_cnxn.commit()
+
+    print(productivity_df.shape)
+    for index, row in productivity_df.iterrows():
+        
+        try:
+            upload(row)
         except Exception as error:
             print(error)
+            try:
+                azure_cnxn.close()
+            except:
+                print('unable to close connection')
+            print(row)
+            azure_cnxn = connection.azure_connection()
+            azure_cursor = azure_cnxn.cursor()
+            upload(row)
     

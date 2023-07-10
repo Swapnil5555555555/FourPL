@@ -23,6 +23,7 @@ CRN_LIP_PRODUCTIVITY = """
         WHERE SITE_ID='MEM'
         AND TO_LOC_ID LIKE 'CR%OT%'
         AND TRUNC(DSTAMP) < TRUNC(SYSDATE-1.19)
+        AND TRUNC(DSTAMP) >= TRUNC(SYSDATE - 3, 'DD')
         GROUP BY  SKU_ID, TAG_ID, UPDATE_QTY
 
         UNION ALL
@@ -32,6 +33,7 @@ CRN_LIP_PRODUCTIVITY = """
         WHERE SITE_ID='LIP'
         AND CODE='Shipment'
         AND TRUNC(DSTAMP) < TRUNC(SYSDATE-1.19)
+        AND TRUNC(DSTAMP) >= TRUNC(SYSDATE - 3, 'DD')
         AND CUSTOMER_ID='8359'
         GROUP BY  SKU_ID, TAG_ID, UPDATE_QTY
 """
@@ -103,4 +105,49 @@ def crown_lipert_productivity():
             
             
 
-crown_lipert_productivity()
+def lippert_aging_gr():
+    
+    global azure_cnxn, azure_cursor, oracle_cnxn
+    
+    
+    oracle_sql_query = queries.LIP_AGING_GR
+    productivity_df = pd.read_sql(oracle_sql_query, oracle_cnxn)
+
+
+    def upload(row):
+        azure_cursor.execute(queries.INSERT_LIP_AGING,
+                                    is_none(row['REPORT_DATE']),
+                                    is_none(row['SITE_ID']),
+                                    is_none(row['IS_RETURNS']),
+                                    is_none(row['DESCRIPTION']),
+                                    is_none(row['ORIGIN']),
+                                    is_none(row['SUPPLIER']),
+                                    is_none(row['TAG']),
+                                    is_none(row['SKU']),
+                                    is_none(row['LOCATION']),
+                                    is_none(row['PALLET']),
+                                    is_none(row['QOH']),
+                                    is_none(row['LAST_MOVE']),
+                                    is_none(row['RECEIVED_DATE']),
+                                    is_none(row['CONDITION_CODE']))
+        azure_cnxn.commit()
+
+    print(productivity_df.shape)
+    for index, row in productivity_df.iterrows():
+        
+        try:
+            upload(row)
+        except Exception as error:
+            print(error)
+            try:
+                azure_cnxn.close()
+            except:
+                print('unable to close connection')
+            print(row)
+            azure_cnxn = connection.azure_connection()
+            azure_cursor = azure_cnxn.cursor()
+            upload(row)
+    
+    
+# crown_lipert_productivity()
+# lippert_aging_gr()
