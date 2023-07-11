@@ -18,20 +18,39 @@ def is_none(val):
 
 
 def standard_cost():
+    global azure_cnxn, azure_cursor
+
     curr_date = datetime.now().strftime('%Y-%m-%d')
     report = pd.read_sql(queries.standard_cost_query,
                          oracle_cnxn)  # this has one million rows of data, but does not need refresh often (1 - 3 times a month)
-    try:
-        for index, row in report.iterrows():
-            azure_cursor.execute(queries.standard_cost_insert_query,
+
+    print(report.shape)
+    def upload(row):
+        azure_cursor.execute(queries.standard_cost_insert_query,
                                  (row['SKU_ID']
                                   , row['STANDARD_COST']
                                   , curr_date
                                   , uuid4()
                                   ))
-            azure_cnxn.commit()
+        azure_cnxn.commit()
+    try:
+        for index, row in report.iterrows():
+           upload(row)
     except Exception as e:
         print(e)
+        try:
+            azure_cnxn.close()
+        except Exception as error:
+            print(error)
+
+
+        azure_cnxn = connection.azure_connection()
+        azure_cursor = azure_cnxn.cursor()
+
+        try:
+            upload(row)
+        except Exception as error:
+            print('unable to upload row', row)
         #TODO: Log any rows of data that are failing to send... Make sure to queue this reports in email thread
 
     return
