@@ -1,9 +1,11 @@
+
 import pandas as pd
 import queries
 import connection
+import time
 from uuid import uuid4
-from datetime import datetime, timedelta
-import warnings
+from datetime import datetime
+
 
 oracle_cnxn = connection.oracle_connection()
 azure_cnxn = connection.azure_connection()
@@ -20,11 +22,17 @@ def is_none(val):
 def standard_cost():
     global azure_cnxn, azure_cursor
 
-    curr_date = datetime.now().strftime('%Y-%m-%d')
+    # curr_date = datetime.now().strftime('%Y-%m-%d')
+    curr_date = '2023-07-10'
     report = pd.read_sql(queries.standard_cost_query,
                          oracle_cnxn)  # this has one million rows of data, but does not need refresh often (1 - 3 times a month)
 
+    uploaded_skus = pd.read_sql(queries.SELECT_DISTINCT_SKU_AT_DATE, azure_cnxn)
+    uploaded_skus = uploaded_skus['SKU_ID'].unique()
+    uploaded_skus_set = set(uploaded_skus)
+    
     print(report.shape)
+    
     def upload(row):
         azure_cursor.execute(queries.standard_cost_insert_query,
                                  (row['SKU_ID']
@@ -33,9 +41,17 @@ def standard_cost():
                                   , uuid4()
                                   ))
         azure_cnxn.commit()
+        
+        
+    skipped = 0 
     try:
         for index, row in report.iterrows():
+           if row['SKU_ID'] in uploaded_skus_set:
+               skipped += 1
+               print('skipped', row['SKU_ID'], 'qunatity skipped', skipped ,end='\r')
+               continue
            upload(row)
+           
     except Exception as e:
         print(e)
         try:
@@ -43,9 +59,16 @@ def standard_cost():
         except Exception as error:
             print(error)
 
-
-        azure_cnxn = connection.azure_connection()
-        azure_cursor = azure_cnxn.cursor()
+        did_reconnect = False
+        while not did_reconnect:
+            try:
+                azure_cnxn = connection.azure_connection()
+                azure_cursor = azure_cnxn.cursor()
+                did_reconnect = True
+            except Exception as e:
+                print('did not reconnect, trying again')
+                time.sleep(3)
+                
 
         try:
             upload(row)

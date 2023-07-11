@@ -5,6 +5,7 @@ standard_cost_query = """
         FROM DCSDBA.V_SKU_PROPERTIES	
         WHERE SITE_ID='MEM'	
             AND STANDARD_COST IS NOT NULL	
+
     """
 
 
@@ -690,3 +691,12 @@ INSERT_LIP_AGING = """
         ,?
     )
     """
+    
+    
+SELECT_DISTINCT_SKU_AT_DATE = """
+        SELECT
+    DISTINCT
+        SKU_ID
+    FROM Standard_Cost
+    WHERE RECORD_DATE = '07/10/2023'
+        """
