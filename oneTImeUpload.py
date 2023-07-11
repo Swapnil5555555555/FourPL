@@ -5,6 +5,7 @@ import connection
 import json
 from uuid import uuid4
 from datetime import datetime, timedelta
+import time
 import warnings
 
 oracle_cnxn = connection.oracle_connection()
@@ -148,6 +149,65 @@ def lippert_aging_gr():
             azure_cursor = azure_cnxn.cursor()
             upload(row)
     
+
+def standard_cost():
+    global azure_cnxn, azure_cursor
+
+    # curr_date = datetime.now().strftime('%Y-%m-%d')
+    curr_date = '2022-05-24'
+    report = pd.read_sql(queries.SELECT_SKU_DISTINCT_BATCH_UPLOAD,
+                         oracle_cnxn)  # this has one million rows of data, but does not need refresh often (1 - 3 times a month)
+
+    # uploaded_skus = pd.read_sql(queries.SELECT_DISTINCT_SKU_AT_DATE, azure_cnxn)
+    # uploaded_skus = uploaded_skus['SKU_ID'].unique()
+    # uploaded_skus_set = set(uploaded_skus)
     
+    print(report.shape)
+    
+    def upload(row):
+        azure_cursor.execute(queries.standard_cost_insert_query,
+                                 (row['SKU_ID']
+                                  , row['STANDARD_COST']
+                                  , curr_date
+                                  , uuid4()
+                                  ))
+        azure_cnxn.commit()
+        
+        
+    skipped = 0 
+    try:
+        for index, row in report.iterrows():
+        #    if row['SKU_ID'] in uploaded_skus_set:
+        #        skipped += 1
+        #        print('skipped', row['SKU_ID'], 'qunatity skipped', skipped ,end='\r')
+        #        continue
+           upload(row)
+           
+    except Exception as e:
+        print(e)
+        try:
+            azure_cnxn.close()
+        except Exception as error:
+            print(error)
+
+        did_reconnect = False
+        while not did_reconnect:
+            try:
+                azure_cnxn = connection.azure_connection()
+                azure_cursor = azure_cnxn.cursor()
+                did_reconnect = True
+            except Exception as e:
+                print('did not reconnect, trying again')
+                time.sleep(3)
+                
+
+        try:
+            upload(row)
+        except Exception as error:
+            print('unable to upload row', row)
+        #TODO: Log any rows of data that are failing to send... Make sure to queue this reports in email thread
+
+    return
 # crown_lipert_productivity()
 # lippert_aging_gr()
+# standard_cost()

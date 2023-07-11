@@ -619,7 +619,7 @@ def three_pl_cost(set_report=None):
 
 
 def crown_work_in_process(set_report=None):
-    global azure_cnxn, azure_cursor
+    global azure_cnxn, azure_cursor, oracle_cnxn
 
     if set_report is not None:
 
@@ -628,60 +628,62 @@ def crown_work_in_process(set_report=None):
         dates = set(dates)
 
     else:
-
         report = pd.read_sql(queries.WORK_IN_PROGRESS, oracle_cnxn)
 
-
+    def upload(row):
+        azure_cursor.execute(queries.INSERT_DBO_CROWN_WORK_IN_PROCESS,
+                                     row['REPORT_DATE'],
+                                     is_none(row['RECEIVED_DATE']),
+                                     is_none(row['LAST_MOVE']),
+                                     is_none(row['CROWN_ENTRY_DATE']),
+                                     is_none(row['Returns?']),
+                                     is_none(row['PALLET']),
+                                     is_none(row['TAG']),
+                                     is_none(row['BINLOC']),
+                                     is_none(row['SKU']),
+                                     is_none(row['QOH']),
+                                     is_none(row['DESCRIPTION']),
+                                     is_none(row['ORIGIN']),
+                                     is_none(row['SUPPLIER']),
+                                     is_none(row['SUPPLIER_PALLET']),
+                                     is_none(row['CONDITION_CODE']),
+                                     uuid4())
+        azure_cnxn.commit()
+        
+        
+    print('uploading crown work in progress', report.shape)
+    
     for index, row in report.iterrows():
-        if set_report is None:
+        print(row)
+        curr_date = row['REPORT_DATE']
+        if set_report and curr_date in dates:
+            continue
+        try:
+            upload(row)
+        except:
             try:
-                azure_cursor.execute(queries.INSERT_DBO_CROWN_WORK_IN_PROCESS,
-                                     row['REPORT_DATE'],
-                                     is_none(row['RECEIVED DATE']),
-                                     is_none(row['LAST_MOVE']),
-                                     is_none(row['CROWN_ENTRY_DATE']),
-                                     is_none(row['Returns?']),
-                                     is_none(row['PALLET']),
-                                     is_none(row['TAG']),
-                                     is_none(row['BINLOC']),
-                                     is_none(row['SKU']),
-                                     is_none(row['QOH']),
-                                     is_none(row['DESCRIPTION']),
-                                     is_none(row['ORIGIN']),
-                                     is_none(row['SUPPLIER']),
-                                     is_none(row['SUPP_PALLET']),
-                                     is_none(row['CONDITION_CODE']),
-                                     uuid4())
-                azure_cnxn.commit()
-            except Exception as e:
-                pass
-        else:
-            curr_date = row['REPORT_DATE']
-            if curr_date in dates:
-                continue
-
-            try:
-                azure_cursor.execute(queries.INSERT_DBO_CROWN_WORK_IN_PROCESS,
-                                     row['REPORT_DATE'],
-                                     is_none(row['RECEIVED DATE']),
-                                     is_none(row['LAST_MOVE']),
-                                     is_none(row['CROWN_ENTRY_DATE']),
-                                     is_none(row['Returns?']),
-                                     is_none(row['PALLET']),
-                                     is_none(row['TAG']),
-                                     is_none(row['BINLOC']),
-                                     is_none(row['SKU']),
-                                     is_none(row['QOH']),
-                                     is_none(row['DESCRIPTION']),
-                                     is_none(row['ORIGIN']),
-                                     is_none(row['SUPPLIER']),
-                                     is_none(row['SUPP_PALLET']),
-                                     is_none(row['CONDITION_CODE']),
-                                     uuid4())
-                azure_cnxn.commit()
+                azure_cnxn.close()
+                oracle_cnxn.close()
             except:
-
-                azure_cursor.close()
+                pass
+            
+            did_reconnet = False
+            while not did_reconnet:   
+                try:
+                    azure_cnxn = connection.azure_connection()
+                    oracle_cnxn = connection.oracle_connection()
+                    azure_cursor = azure_cnxn.cursor()
+                    did_reconnet = True
+                    
+                except Exception as e: 
+                    print('unable to re-connect - attempting in 3 seconds', e, end='\r')
+                    time.sleep(3)
+                        
+            try:
+                upload(row)
+            except Exception as error :
+                print('unable to upload record', error)  
+                    
 
 
 
