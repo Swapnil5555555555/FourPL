@@ -31,7 +31,7 @@ def standard_cost():
     uploaded_skus = uploaded_skus['SKU_ID'].unique()
     uploaded_skus_set = set(uploaded_skus)
     
-    print(report.shape)
+    print('uploading standard costs', report.shape)
     
     def upload(row):
         azure_cursor.execute(queries.standard_cost_insert_query,
@@ -43,12 +43,10 @@ def standard_cost():
         azure_cnxn.commit()
         
         
-    skipped = 0 
     try:
         for index, row in report.iterrows():
+           print(index, end='\r')
            if row['SKU_ID'] in uploaded_skus_set:
-               skipped += 1
-               print('skipped', row['SKU_ID'], 'qunatity skipped', skipped ,end='\r')
                continue
            upload(row)
            
@@ -654,7 +652,7 @@ def crown_work_in_process(set_report=None):
     print('uploading crown work in progress', report.shape)
     
     for index, row in report.iterrows():
-        print(row)
+        print(index, end='\r')
         curr_date = row['REPORT_DATE']
         if set_report and curr_date in dates:
             continue
