@@ -494,31 +494,63 @@ def open_asns():
             print(e)
             #TODO: Make sure that all the information was distributed correctly if inpossble include it in the email report
 
-
+def handle_reconnect_and_upload(upload, row):
+    global azure_cnxn, azure_cursor, oracle_cnxn
+    try:
+        azure_cnxn.close()
+    except:
+        pass
+    try:
+        oracle_cnxn.close()
+    except:
+        pass
+    
+    try:
+        did_not_reconnect = True
+        while did_not_reconnect:
+            try:
+                azure_cnxn = connection.azure_connection()
+                oracle_cnxn = connection.oracle_connection()
+                azure_cursor = azure_cnxn.cursor()
+                did_not_reconnect = False
+            except:
+                time.sleep(3)
+        upload(row)
+    except Exception as e:
+        pass
+        
+        
+        
 def open_tags():
+    
     report = pd.read_sql(queries.open_tags_hlg_lip, oracle_cnxn)
+    
+    def upload(row):
+        azure_cursor.execute(queries.open_tags_hlg_lip_insert, (
+            row['REPORT_DATE']
+            ,is_none(row['3PL'])
+            ,is_none(row['PALLET_ID'])
+            ,is_none(row['SKU_ID'])
+            ,is_none(row['LOCATION_ID'])
+            ,is_none(row['RECEIPT_DSTAMP'])
+            ,is_none(row['MOVE_DSTAMP'])
+            ,is_none(row['QTY'])
+            ,is_none(row['TAG_ID'])
+            ,uuid4()
+        ))
+        azure_cnxn.commit()
+            
     for index, row in report.iterrows():
         try:
-            azure_cursor.execute(queries.open_tags_hlg_lip_insert, (
-                row['REPORT_DATE']
-                ,is_none(row['3PL'])
-                ,is_none(row['PALLET_ID'])
-                ,is_none(row['SKU_ID'])
-                ,is_none(row['LOCATION_ID'])
-                ,is_none(row['RECEIPT_DSTAMP'])
-                ,is_none(row['MOVE_DSTAMP'])
-                ,is_none(row['QTY'])
-                ,is_none(row['TAG_ID'])
-                ,uuid4()
-            ))
-            azure_cnxn.commit()
+            upload(row)
         except Exception as e:
-            print(e)
+            handle_reconnect_and_upload(upload, row)
+            
 
     report = pd.read_sql(queries.crown_open_tags, oracle_cnxn)
-    for index, row in report.iterrows():
-        try:
-            azure_cursor.execute(queries.open_tags_hlg_lip_insert, (
+    
+    def upload_crown_open_tags(row):
+        azure_cursor.execute(queries.open_tags_hlg_lip_insert, (
                 row['REPORT_DATE']
                 , is_none(row['3PL'])
                 , is_none(row['PALLET_ID'])
@@ -530,12 +562,13 @@ def open_tags():
                 , is_none(row['TAG_ID'])
                 , uuid4()
             ))
-            azure_cnxn.commit()
+        azure_cnxn.commit()
+            
+    for index, row in report.iterrows():
+        try:
+            upload_crown_open_tags(row)
         except Exception as e:
-            print(e)
-
-            #TODO: Log information and trigger email if failure
-    #TODO: Need to add crown flow to this automation
+            handle_reconnect_and_upload(upload_crown_open_tags, row)
 
 
 def three_pl_cost(set_report=None):
