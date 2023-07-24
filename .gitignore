@@ -1,3 +1,5 @@
 .env
 logs
 arch
+__pycache__
+.idea
