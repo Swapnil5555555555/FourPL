@@ -1,10 +1,11 @@
 import cx_Oracle
 import pyodbc
-from dotenv import load_dotenv
 import os
-
+from dotenv import load_dotenv
 load_dotenv()
 cx_Oracle.init_oracle_client(config_dir=os.environ.get('ORACLE_NETWORK_CONFIG'))
+
+
 
 
 def azure_connection():

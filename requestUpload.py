@@ -1,5 +1,5 @@
-from functions import open_tags
+from functions import standard_cost
 
 
 if __name__ == '__main__':
-    open_tags()
+    standard_cost()

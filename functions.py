@@ -5,12 +5,17 @@ import connection
 import time
 from uuid import uuid4
 from datetime import datetime
+import warnings
+warnings.filterwarnings("ignore")
 
 
 oracle_cnxn = connection.oracle_connection()
 azure_cnxn = connection.azure_connection()
 azure_cursor = azure_cnxn.cursor()
 
+
+def details_of_transaction_lines(function_name, dataframe):
+    print(function_name, 'total number of rows', dataframe.shape[0])
 
 def is_none(val):
     if val is None or str(val) == 'NaT' or str(val) == 'NaN' or str(val) == 'nan':
@@ -84,7 +89,7 @@ def crown_hlg_kits_dp(set_report=None):
     else:
         report = pd.read_sql(queries.crown_hlg_kits_dp_query, oracle_cnxn)
 
-    report_size = report.shape[0]
+    details_of_transaction_lines(crown_hlg_kits_dp.__name__, report)
     for index, row in report.iterrows():
         try:
 
@@ -105,8 +110,6 @@ def crown_hlg_kits_dp(set_report=None):
                                     , uuid4())
                                  )
             azure_cnxn.commit()
-            report_size -= 1
-            print('remaining uploads:', report_size)
 
         except Exception as e:
             print(e)
@@ -121,7 +124,8 @@ def shipped_lines_query_dp(set_report=None):
         report = set_report
     else:
         report = pd.read_sql(queries.shipped_lines_query, oracle_cnxn)
-    size_report = report.shape[0]
+        
+    details_of_transaction_lines(shipped_lines_query_dp.__name__, report)
     for index, row in report.iterrows():
         try:
             print('uploading shipped lines', size_report)
@@ -147,6 +151,7 @@ def shipped_lines_query_dp(set_report=None):
 
 def open_kits():
     report = pd.read_sql(queries.open_kits_query, oracle_cnxn)
+    details_of_transaction_lines(open_kits.__name__, report)
     for index, row in report.iterrows():
         try:
 
@@ -174,6 +179,8 @@ def des_opc(set_report=None):
         report = set_report
     else:
         report = pd.read_sql(queries.des_ops_query, oracle_cnxn)
+        
+    details_of_transaction_lines(des_opc.__name__, report)
     for index, row in report.iterrows():
         try:
             azure_cursor.execute(queries.des_ops_insert_query, (
@@ -194,6 +201,7 @@ def des_opc(set_report=None):
 def crown_prepack_rates():
     curr_date = datetime.now().strftime('%Y-%m-%d')
     report = pd.read_sql(queries.crown_prepack_rates_query, oracle_cnxn)
+    details_of_transaction_lines(crown_prepack_rates.__name__, report)
     for index, row in report.iterrows():
         try:
             azure_cursor.execute(queries.crown_prepack_rates_insert_query,
@@ -229,6 +237,8 @@ def inbound_putaway_hlg_lip(set_hlg_lip_report=None):
         skip_dates = None
 
     skipped = 0
+    
+    details_of_transaction_lines(inbound_putaway_hlg_lip.__name__, report_hlg_lip)
     for index, row in report_hlg_lip.iterrows():
         if set_hlg_lip_report is not None and skip_dates is not None:
             this_date = row['REPORT_DATE'].date()
@@ -324,7 +334,7 @@ def inbound_putaway_crown(set_crown_report=None):
         skip_dates = None
 
     skipped = 0
-
+    details_of_transaction_lines(inbound_putaway_crown.__name__, report_crown)
     for index, row in report_crown.iterrows():
         if set_crown_report is not None and skip_dates is not None:  # We can assume that we will always have archive
             if row['REPORT_DATE'].date() not in skip_dates:
@@ -407,7 +417,7 @@ def inbound_receipts(set_report=None):
 
 
     skipped = 0
-
+    details_of_transaction_lines(inbound_receipts.__name__, report)
     for index, row in report.iterrows():
         if set_report is not None and skip_dates is not None and len(skip_dates) > 0:
             if row['REPORT_DATE'].date() not in skip_dates:
@@ -475,6 +485,7 @@ def inbound_receipts(set_report=None):
 
 def open_asns():
     report = pd.read_sql(queries.open_asns, oracle_cnxn)
+    details_of_transaction_lines(open_asns.__name__, report)
     for index, row in report.iterrows():
         try:
 
@@ -524,7 +535,7 @@ def handle_reconnect_and_upload(upload, row):
 def open_tags():
     
     report = pd.read_sql(queries.open_tags_hlg_lip, oracle_cnxn)
-    
+    details_of_transaction_lines(open_tags.__name__, report)
     def upload(row):
         azure_cursor.execute(queries.open_tags_hlg_lip_insert, (
             row['REPORT_DATE']
@@ -580,6 +591,11 @@ def three_pl_cost(set_report=None):
         dates = None
     else:
         report = pd.read_sql(queries.THREE_PL_COST, oracle_cnxn)
+        
+        
+    details_of_transaction_lines(three_pl_cost.__name__, report)
+    
+    
     for index, row in report.iterrows():
         if set_report is None:
             try:
@@ -682,7 +698,8 @@ def crown_work_in_process(set_report=None):
         azure_cnxn.commit()
         
         
-    print('uploading crown work in progress', report.shape)
+    # print('uploading crown work in progress', report.shape)
+    details_of_transaction_lines(crown_work_in_process.__name__, report)
     
     for index, row in report.iterrows():
         print(index, end='\r')
@@ -735,7 +752,7 @@ def crown_lipert_productivity():
                                     is_none(row['QTY']))
         azure_cnxn.commit()
         
-    print(productivity_df.shape)
+    details_of_transaction_lines(crown_work_in_process.__name__, productivity_df)
     for index, row in productivity_df.iterrows():
         try:
             upload(row)
@@ -778,7 +795,7 @@ def lippert_aging_gr():
                                     is_none(row['CONDITION_CODE']))
         azure_cnxn.commit()
 
-    print(productivity_df.shape)
+    details_of_transaction_lines(lippert_aging_gr.__name__, productivity_df)
     for index, row in productivity_df.iterrows():
         
         try:
