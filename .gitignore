@@ -3,3 +3,4 @@ logs
 arch
 __pycache__
 .idea
+dummyConnection.py
