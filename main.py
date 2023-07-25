@@ -7,7 +7,7 @@ if __name__ == "__main__":
     
     task_one = [func.crown_work_in_process, func.crown_lipert_productivity, func.crown_hlg_kits_dp, func.inbound_putaway_crown]
     task_two = [func.lippert_aging_gr, func.open_kits, func.shipped_lines_query_dp, func.inbound_receipts]
-    task_three = [func.open_tags, func.inbound_putaway_hlg_lip, func.three_pl_cost]
+    task_three = [func.open_tags, func.inbound_putaway_hlg_lip, func.three_pl_cost, func.open_asns]
     
     cluster_one = Cluster('Cluster One', task_one)
     cluster_two = Cluster('Cluster Two', task_two)
