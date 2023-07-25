@@ -128,7 +128,6 @@ def shipped_lines_query_dp(set_report=None):
     details_of_transaction_lines(shipped_lines_query_dp.__name__, report)
     for index, row in report.iterrows():
         try:
-            print('uploading shipped lines', size_report)
             azure_cursor.execute(queries.shipped_lines_insert_query,
                                  (row['REPORT_DATE']
                                   , row['3PL']
@@ -141,7 +140,6 @@ def shipped_lines_query_dp(set_report=None):
                                   , row['SHIPPED_DATE']
                                   , uuid4()))
             azure_cnxn.commit()
-            size_report -= 1
         except Exception as e:
             print(e)
             # TODO: Log missed row on distinct report and distribute
@@ -657,9 +655,6 @@ def three_pl_cost(set_report=None):
                     pass
         else:
             failed += 1
-            print('not doing anything with this record', row)
-        
-        print('FAILED ROWS', failed)
 
 
 
