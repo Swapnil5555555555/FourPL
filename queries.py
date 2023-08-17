@@ -50,7 +50,7 @@ crown_hlg_kits_dp_query = """
                                 
      
             WHERE OH.CLIENT_ID='VPNA' AND FROM_SITE_ID='MEM'
-                    AND TRUNC(SHIP_BY_DATE)=TRUNC(SYSDATE-1.15)
+                    AND TRUNC(SHIP_BY_DATE)=TRUNC(SYSDATE-1.19)
                     AND (CONSIGNMENT LIKE '%HLG%' OR ORDER_TYPE='KTS')
     
         )
